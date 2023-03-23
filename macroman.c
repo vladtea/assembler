@@ -142,14 +142,3 @@ void delete_macros(const char* filename, const char* new_filename) {
     fclose(file);
     fclose(new_file);
 }
-
-
-
-
-
-
-
-
-
-
-

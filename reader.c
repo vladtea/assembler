@@ -1,7 +1,19 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 
+enum Register {
+    r0,
+    r1,
+    r2,
+    r3,
+    r4,
+    r5,
+    r6,
+    r7
+};
 
-enum Opcode {
+enum OpCodeEnum {
     mov = 0b0000,
     cmp = 0b0001,
     add = 0b0010,
@@ -19,6 +31,78 @@ enum Opcode {
     rts = 0b1110,
     stop = 0b1111
 };
+
+
+void fileManipulate(const char* fileName) {
+    FILE* file = fopen(fileName, "r");
+    char line[100];
+    char opcode[4];
+    char operand1[100];
+    char operand2[100];
+    int success = 0;
+    if (file == NULL) {
+        printf("Error opening file!\n");
+        return 1;
+    }
+    while (fgets(line, sizeof(line), file)) {
+        success = sscanf(line, "%s %[^,]%[, ]%s", opcode, operand1, operand2);
+        if (success >= 2) {
+            // Parse opcode enum
+            enum OpCode opcodeEnum;
+            if (strcmp(opcode, "ADD") == 0) {
+                opcodeEnum = ADD;
+            }
+            else if (strcmp(opcode, "SUB") == 0) {
+                opcodeEnum = SUB;
+            }
+            else if (strcmp(opcode, "MUL") == 0) {
+                opcodeEnum = MUL;
+            }
+            else if (strcmp(opcode, "DIV") == 0) {
+                opcodeEnum = DIV;
+            }
+            else {
+                printf("Unknown opcode: %s\n", opcode);
+                continue;
+            }
+
+            // Check if operand1 is an immediate or a register
+            char* comma_ptr = strchr(operand1, ',');
+            if (comma_ptr == NULL) {
+                // Operand1 is an immediate
+                printf("Opcode: %d, Immediate: %s\n", opcodeEnum, operand1);
+            }
+            else {
+                // Operand1 is a register, operand2 may be an immediate or a register
+                *comma_ptr = '\0'; // Replace comma with null character to separate operands
+                char* rest_ptr = comma_ptr + 1; // Pointer to the rest of the string after the comma
+                if (rest_ptr[0] == '\0') {
+                    // Operand2 is missing
+                    printf("Invalid instruction: %s", line);
+                    continue;
+                }
+                if (rest_ptr[0] >= '0' && rest_ptr[0] <= '9') {
+                    // Operand2 is an immediate
+                    printf("Opcode: %d, Register 1: %s, Immediate: %s\n", opcodeEnum, operand1, rest_ptr);
+                }
+                else {
+                    // Operand2 is a register
+                    printf("Opcode: %d, Register 1: %s, Register 2: %s\n", opcodeEnum, operand1, rest_ptr);
+                }
+            }
+        }
+        else {
+            printf("Invalid instruction: %s", line);
+        }
+    }
+
+    fclose(file);
+
+}
+
+
+
+
 
 while (currentChar != EOF) {
     // ignore whitespace
@@ -82,97 +166,5 @@ switch (my_OpCode) {
 
 
 
-void reader() {
 
 
-}
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-
-#define MAX_MACRO_SIZE 1000
-#define MAX_NAME_SIZE 50
-#define MAX_CONTENT_SIZE 950
-
-typedef struct Macro {
-    char name[MAX_NAME_SIZE];
-    char content[MAX_CONTENT_SIZE];
-} Macro;
-
-Macro* find_macros(const char* filename, int* num_macros) {
-    Macro* macros = NULL;
-    FILE* file = fopen(filename, "r");
-    if (!file) {
-        printf("Error opening file.\n");
-        return NULL;
-    }
-    int in_macro = 0;
-    char line[MAX_MACRO_SIZE];
-    char name[MAX_NAME_SIZE];
-    char content[MAX_CONTENT_SIZE];
-    int content_index = 0;
-    while (fgets(line, MAX_MACRO_SIZE, file)) {
-        if (in_macro) {
-            if (strstr(line, "endmcr")) {
-                in_macro = 0;
-                Macro macro;
-                strcpy(macro.name, name);
-                strcpy(macro.content, content);
-                (*num_macros)++;
-                macros = (Macro*)realloc(macros, (*num_macros) * sizeof(Macro));
-                macros[(*num_macros) - 1] = macro;
-                memset(name, 0, MAX_NAME_SIZE);
-                memset(content, 0, MAX_CONTENT_SIZE);
-                content_index = 0;
-            }
-            else {
-                strcat(content, line);
-                content_index += strlen(line);
-            }
-        }
-        else {
-            char* macro_start = strstr(line, "mcr ");
-            if (macro_start) {
-                in_macro = 1;
-                macro_start += strlen("mcr ");
-                sscanf(macro_start, "%s", name);
-            }
-        }
-    }
-    fclose(file);
-    return macros;
-}
-
-void replace_macros(const char* filename, Macro* macros, int num_macros) {
-    FILE* file = fopen(filename, "r");
-    if (!file) {
-        printf("Error opening file.\n");
-        return;
-    }
-    char line[MAX_MACRO_SIZE];
-    while (fgets(line, MAX_MACRO_SIZE, file)) {
-        for (int i = 0; i < num_macros; i++) {
-            if (strstr(line, macros[i].name)) {
-                printf("%s", macros[i].content);
-                break;
-            }
-        }
-        if (!strstr(line, "mcr ")) {
-            printf("%s", line);
-        }
-    }
-    fclose(file);
-}
-
-int main() {
-    int num_macros = 0;
-    Macro* macros = find_macros("asmb.txt", &num_macros);
-    if (!macros) {
-        printf("Error finding macros.\n");
-        return 1;
-    }
-    replace_macros("asmb.txt", macros, num_macros);
-    free(macros);
-    return 0;
-}

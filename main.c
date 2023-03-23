@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include "macroman.h"
 #include "labeling.h"
+#include "reader.h"
 
 
 #define MAX_MACRO_SIZE 10000
@@ -65,22 +66,12 @@ int main(int argc, char* argv[]) {
             break;
         }
     }
-
-
-
-
-
-
-
-
-
-
     // free memory for the array of pointers to labels
     free(labels);
     
+    /*------------------------------          OpCode and the first passage         -------------------------------------*/
     
-    
-    
+    fileManipulate(amFileName);
     
     
     

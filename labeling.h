@@ -6,7 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-void reader(const char* fileName);
 
+enum opcode get_opcode(const char* opcode_name);
+void extract_labels(const char* fileName, char* labels[], int max_labels);
 #endif 
 

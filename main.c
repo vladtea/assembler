@@ -68,11 +68,11 @@ int main(int argc, char* argv[]) {
         }
     }
     // free memory for the array of pointers to labels
-    free(labels);
     
+    free(labels);
     /*------------------------------          OpCode and the first passage         -------------------------------------*/
     
-    reader(amFileName);
+    reader(amFileName,argv[1],argv[1]);
     
     
     

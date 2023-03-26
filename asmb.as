@@ -11,10 +11,11 @@ jmp: dec K
 prn #-5
 bne LOOP(r4,r7)
 m1
-L1: inc K
-
+L1: mov r1,r2
+.extern h
+.entry hey
 bne LOOP(K,STR)
 END: stop
 STR: .string "abcdef"
-LENGTH: .data
+LENGTH: .data 1,2
 K: .data 22

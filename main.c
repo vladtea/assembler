@@ -7,6 +7,7 @@
 #include "reader.h"
 
 
+
 #define MAX_MACRO_SIZE 10000
 #define MAX_LABELS 100
 
@@ -71,7 +72,7 @@ int main(int argc, char* argv[]) {
     
     /*------------------------------          OpCode and the first passage         -------------------------------------*/
     
-    fileManipulate(amFileName);
+    reader(amFileName);
     
     
     

@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-char saved_words[24][4] = {
+char saved_words[25][6] = {
     "mov",
     "cmp",
     "add",

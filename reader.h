@@ -6,6 +6,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+
+
 void reader(const char* fileName, const char* fileName1, const char* fileName2);
 
 #endif 

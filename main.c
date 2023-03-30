@@ -5,6 +5,7 @@
 #include "macroman.h"
 #include "labeling.h"
 #include "reader.h"
+#include "secondpassage.h"
 
 
 
@@ -21,6 +22,7 @@ int main(int argc, char* argv[]) {
     strcat(amFileName, argv[1]);
     strcat(amFileName, ".am");
     int num_macros = 0;
+    
     /* run through the file and finds all the macros in it */
     Macro* macros = find_macros(fileName, &num_macros);
     if (!macros) {
@@ -41,8 +43,7 @@ int main(int argc, char* argv[]) {
     
     
     char** labels = malloc(MAX_LABELS * sizeof(char*)); // allocate memory for array of pointers to labels
-    int IC = 0;
-    int DC = 0;
+    
     // check if memory allocation was successful
     if (labels == NULL) {
         perror("Error allocating memory");
@@ -69,12 +70,15 @@ int main(int argc, char* argv[]) {
     }
     // free memory for the array of pointers to labels
     
-    free(labels);
+    /*free(labels);*/
     /*------------------------------          OpCode and the first passage         -------------------------------------*/
     
-    reader(amFileName,argv[1],argv[1]);
+    reader(amFileName, argv[1], argv[1]);
     
-    
+
+    /*------------------------------         final passage         -------------------------------------*/
+
+    finalPassage(argv[1], labels);
     
     
     

@@ -5,17 +5,19 @@ endmcr
 
 
 MAIN: mov r3, LENGTH
-LOOP: jmp L1(#-1,r6)
+LOOP: jmp r1
 m1
 jmp: dec K
 prn #-5
 bne LOOP(r4,r7)
 m1
-L1: mov r1,r2
-.extern h
-.entry hey
+L1: inc r1
+.entry hi
+.entry good
+.entry job
+.extern bye
 bne LOOP(K,STR)
 END: stop
-STR: .string "abcdef"
-LENGTH: .data 1,2
-K: .data 22
+.string "abcdefg"
+LENGTH: .data "1231"
+.data "12"

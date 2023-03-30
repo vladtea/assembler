@@ -2,7 +2,12 @@
 #include <stdlib.h>
 #include <string.h>
 
-enum Register {
+struct counter {
+    int ic;
+    int dc;
+};
+
+typedef enum {
     r0,
     r1,
     r2,
@@ -11,26 +16,22 @@ enum Register {
     r5,
     r6,
     r7
-};
+} Register;
 
-//enum OpCodeEnum {
-//    mov = 0b0000,
-//    cmp = 0b0001,
-//    add = 0b0010,
-//    sub = 0b0011,
-//    not = 0b0100,
-//    clr = 0b0101,
-//    lea = 0b0110,
-//    inc = 0b0111,
-//    dec = 0b1000,
-//    jmp = 0b1001,
-//    bne = 0b1010,
-//    red = 0b1011,
-//    prn = 0b1100,
-//    jsr = 0b1101,
-//    rts = 0b1110,
-//    stop = 0b1111
-//};
+Register register_from_string(const char* reg_string) {
+    if (strcmp(reg_string, "r0") == 0) return r0;
+    if (strcmp(reg_string, "r1") == 0) return r1;
+    if (strcmp(reg_string, "r2") == 0) return r2;
+    if (strcmp(reg_string, "r3") == 0) return r3;
+    if (strcmp(reg_string, "r4") == 0) return r4;
+    if (strcmp(reg_string, "r5") == 0) return r5;
+    if (strcmp(reg_string, "r6") == 0) return r6;
+    if (strcmp(reg_string, "r7") == 0) return r7;
+    // Invalid register name
+    return -1;
+}
+
+
 
 struct symbol {
     char name[256];
@@ -66,7 +67,8 @@ enum opcode_type {
     prn = 12,
     jst = 13,
     rts = 14,
-    stop = 15
+    stop = 15,
+
 };
 /* the struct is  OpCode,the number, number of operands*/
 struct opcode opcodes[] = {
@@ -89,6 +91,19 @@ struct opcode opcodes[] = {
 };
 int num_opcodes = sizeof(opcodes) / sizeof(struct opcode);
 
+/*type , num of DC*/
+struct operand operands[] = {
+    {"#imm", 2},
+    {"reg", 2},
+    {"[reg]", 4},
+    {"[#imm+reg]", 3},
+    {"[reg+reg]", 2},
+};
+
+
+
+
+
 enum opcode_type get_opcode(const char* opcode_name) {
     for (int i = 0; i < num_opcodes; i++) {
         if (strcmp(opcode_name, opcodes[i].name) == 0) {
@@ -98,46 +113,58 @@ enum opcode_type get_opcode(const char* opcode_name) {
     return INVALID_OPCODE;
 }
 
-struct operand operands[] = {
-        {"imm", 0},
-        {"dir", 1},
-        {"ind", 2},
-        {"reg", 3}
-};
-int num_operands = sizeof(operands) / sizeof(struct operand);
 
 
 
 
-int DC = 0;
-int IC = 0;
+struct counter cnt = { 100,0 };
+int numline = 0;
 char line[256];
 struct symbol symtab[256];
 int symtab_size = 0;
 int has_symbol = 0;
-void reader(const char* fileName,const char* fileName1,const char* fileName2) {
+void reader(const char* fileName, const char* fileName1, const char* fileName2) {
     FILE* entry_file = NULL;
     FILE* extern_file = NULL;
     FILE* src_file = fopen(fileName, "r");
     if (!src_file) {
         printf("Error opening source file\n");
-        
+
     }
 
     while (fgets(line, 256, src_file)) {
+        char* newline; /*used for triming to append the lines to .ent and .ext*/
         char symbol[256];
         char opcode[256];
         char operand1[256];
         char operand2[256];
         int bytes = 0;
         has_symbol = 0;
-
+        numline++;
         if (sscanf(line, "%255[^:]:%s %s %s", symbol, opcode, operand1, operand2) >= 2) {
             // Line has a symbol
-            has_symbol = 1;
+            cnt.dc = 4;
+            cnt.ic = cnt.ic + cnt.dc;
+            
         }
         else if (sscanf(line, "%s %s %s", opcode, operand1, operand2) >= 1) {
             // Line has no symbol
+            Register reg1 = register_from_string(operand1);
+            /* if reg1 is not a reg it is an immidiate*/
+            if (reg1 == -1) {
+                cnt.dc = 3;
+                cnt.ic = cnt.ic + cnt.dc;
+            }
+            /* operan1 and operand2 are registers*/
+            else {
+                cnt.dc = 2;
+                cnt.ic = cnt.ic + cnt.dc;
+            }
+           
+        }
+        else if (sscanf(line, opcode, operand1) >= 1) {
+            
+
         }
         else if (sscanf(line, "%s", opcode) < 1) {
             // Line is blank or contains only whitespace
@@ -154,49 +181,100 @@ void reader(const char* fileName,const char* fileName1,const char* fileName2) {
         }
 
         // Check if line contains a data storage directive
-        if (strstr(opcode, ".data")) {
-            // Parse and count number of elements in data directive
-            char* token = strtok(operand1, ",");
-            int num_elements = 0;
-            while (token != NULL) {
-                num_elements++;
-                token = strtok(NULL, ",");
+        if (strstr(line, ".data") != NULL) {
+            /* .data command without label */
+            int count = 0;
+            int cruiser = 0;
+            while (line[cruiser] != '\n') {
+                if (line[cruiser] == ',') {
+                    cruiser++;
+                }
+                cruiser++;
             }
-
-            // TODO: encode data directive in memory and update data counter (DC)
-
-            DC += num_elements;
-        }
-        else if (strstr(opcode, ".string")) {
-            // Count number of characters in string
-            int num_chars = strlen(operand1) - 2; // Subtract two for the enclosing quotes
-            for (int i = 0; i < num_chars; i++) {
-                if (operand1[i] == '\\') {
-                    // Escape character, skip next character
-                    i++;
+            count++;
+            
+            int x = count;
+            char* token = strtok(line, "\"");
+            token = strtok(NULL, " ");
+            if (x > 1) {
+                token = strtok(token, ",");
+            }
+            while (token != NULL) {
+                (cnt.dc)++;
+                count--;
+                if (x == 1) {
+                    token = strtok(NULL, " ");
+                }
+                else {
+                    token = strtok(NULL, ",");
                 }
             }
-
-            // TODO: encode string directive in memory and update data counter (DC)
-
-            DC += num_chars;
+            if (count != 0) {
+                printf("Insufficient commas in .data command. Line number %d.\n", numline);
+                cnt.dc = (cnt.dc) - x;
+            }
+            continue;
         }
 
+		if (strstr(line, ".string") != NULL) {
+			/* .string command without label */
+			int count = 0;
+			int cruiser = 0;
+			while (line[cruiser] != '\n') {
+				if (line[cruiser] == '"') {
+					count++;
+				}
+				cruiser++;
+			}
+			if (count >= 2) {
+				char* token = strtok(line, "\"");
+					token = strtok(NULL, "\"");
+						if (strlen(token) == 0) {
+							printf(".string command needs to have two arguments. Line number %d.\n", numline);
+						}
+						else {
+							int lengthOfString = strlen(token);
+							cnt.dc = (cnt.dc) + lengthOfString + 1; // +1 for the null terminator at the end of the string
+						}
+			}
+			else {
+				printf(".string command needs to have at least two quotation marks. Line number %d.\n", numline);
+			}
+			continue;
+		}
 
-        // Check if line contains an entry or extern instruction
-        if (strstr(opcode, ".entry")) {
-            // Create new file for .entry directive
-            if (entry_file) {
-                fclose(entry_file);
-            }
-            char entry_filename[256];
-            sprintf(entry_filename, "%s.ent", fileName1);
-            entry_file = fopen(entry_filename, "a");
-            if (!entry_file) {
-                printf("Error creating entry file\n");
-                return;
-            }
 
+
+
+            // Check if line contains an entry or extern instruction
+            if (strstr(opcode, ".entry")) {
+                // Create new file for .entry directive
+                if (entry_file) {
+                    fclose(entry_file);
+                }
+                char entry_filename[256];
+                sprintf(entry_filename, "%s.ent", fileName1);
+                entry_file = fopen(entry_filename, "a");
+
+                if (!entry_file) {
+                    entry_file = fopen(entry_filename, "w"); // Create the file if it doesn't exist
+                    if (!entry_file) {
+                        printf("Error creating entry file\n");
+                        return;
+                    }
+                }
+
+                // Write the rest of the line to the entry file
+                memmove(line, line + 6, strlen(line));
+                newline = strtok(line, "\n");
+                newline = strtok(line, " ");
+                fprintf(entry_file, "%s %d\n", newline, cnt.ic);
+                
+                cnt.dc = 1;
+                cnt.ic += cnt.dc;
+                continue;
+
+            }
             else if (strstr(opcode, ".extern")) {
                 // Create new file for .extern directive
                 if (extern_file) {
@@ -204,12 +282,28 @@ void reader(const char* fileName,const char* fileName1,const char* fileName2) {
                 }
                 char extern_filename[256];
                 sprintf(extern_filename, "%s.ext", fileName2);
+
+
                 extern_file = fopen(extern_filename, "a");
                 if (!extern_file) {
-                    printf("Error creating extern file\n");
-                    return;
+                    extern_file = fopen(extern_filename, "w"); // Create the file if it doesn't exist
+                    if (!extern_file) {
+                        printf("Error creating extern file\n");
+                        return;
+                    }
                 }
+
+                // Write the rest of the line to the extern file
+                memmove(line, line + 7, strlen(line));
+                newline = strtok(line, "\n");
+                newline = strtok(line, " ");
+                fprintf(extern_file, "%s %d\n", newline, cnt.ic);
+                cnt.dc = 1;
+                cnt.ic += cnt.dc;
+                continue;
             }
+
+
             // Check if line contains an instruction
             for (int i = 0; i < num_opcodes; i++) {
                 if (strcmp(opcode, opcodes[i].name) == 0) {
@@ -226,39 +320,12 @@ void reader(const char* fileName,const char* fileName1,const char* fileName2) {
                     int addressing_mode2 = 0;
                     bytes = 1; // Opcode always takes up one byte
 
-                    for (int j = 0; j < num_operands; j++) {
-                        if (strstr(operand1, operands[j].name)) {
-                            addressing_mode1 = operands[j].address_mode;
-                            bytes++;
-                            break;
-                        }
-                    }
 
-                    if (operand2[0] != '\0') {
-                        for (int j = 0; j < num_operands; j++) {
-                            if (strstr(operand2, operands[j].name)) {
-                                addressing_mode2 = operands[j].address_mode;
-                                bytes++;
-                                break;
-                            }
-                        }
-                    }
+                    cnt.ic=(cnt.ic) + bytes;
 
-                    IC += bytes;
 
-                    // Update symbol table entry for instruction
-                    if (has_symbol) {
-                        for (int j = 0; j < symtab_size; j++) {
-                            if (strcmp(symbol, symtab[j].name) == 0) {
-                                if (symtab[j].type != -1) {
-                                    printf("Error: symbol %s already defined\n", symbol);
-                                    break;
-                                }
-                                symtab[j].type = IC - bytes; // Value is address of instruction
-                                break;
-                            }
-                        }
-                    }
+
+
 
                     break;
                 }
@@ -266,16 +333,23 @@ void reader(const char* fileName,const char* fileName1,const char* fileName2) {
                     printf("Error: invalid opcode %s\n", opcode);
                 }
             }
+
         }
-    }
-    fclose(src_file);
 
 
+        fclose(src_file);
+
+    
     // Print out symbol table for debugging purposes
     for (int i = 0; i < symtab_size; i++) {
         printf("Symbol: %s, Type: %d, Value: %d\n", symtab[i].name, symtab[i].type, symtab[i].value);
     }
 
+
+
+
+    printf("ic=%d\n", cnt.ic);
+    printf("dc=%d\n", cnt.dc);
 
 }
 
